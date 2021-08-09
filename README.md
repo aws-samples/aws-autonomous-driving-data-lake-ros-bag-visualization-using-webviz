@@ -8,6 +8,9 @@ Once the infrastructure has been deployed, the webviz layout can be configured b
 To stream rosbag files from your bucket using presigned urls, you can use the `get_url.py` script. This would create
 a presigned url to your file and properly encode it and add it as query parameter to webviz in order for it to be streamed. 
 
+### Disclaimer
+This sample application deploys a [docker image](https://hub.docker.com/r/cruise/webviz) not maintained or hosted by AWS and as such no guarantees for its availability, security or correctness is given. 
+
 ### Architecture
 
 ![architecture](docs/architecture.jpg)
