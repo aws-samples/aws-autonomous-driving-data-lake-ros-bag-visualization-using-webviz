@@ -15,6 +15,21 @@ This sample application deploys a [docker image](https://hub.docker.com/r/cruise
 
 ![architecture](docs/architecture.jpg)
 
+### Project Structure
+
+```
+├── README.md # How to use and basic helper commands
+├── cdk.json # Project configuration e.g. target bucket
+├── get_url.py # Helper script to generate streaming URLs
+├── index.ts # CDK app and stack file
+├── lambda
+│   ├── generate_url
+│   │   └── main.py # Lambda source code for generating streaming URLs
+│   └── put_cors
+│       └── main.py # Lambda source code for updating S3 CORS rules
+├── layout.json # Example layout configuration for Webviz
+```
+
 ### Prerequisites
 - Nodejs
 
