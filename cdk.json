@@ -14,7 +14,7 @@
       "partitionKey": "bag_file",
       "sortKey": "scene_id",
       "region": "eu-west-1",
-      "tableName": "SceneDescriptions"
+      "tableName": "Rosbag-Scene-Metadata"
     }
   }
 }

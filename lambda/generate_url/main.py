@@ -70,8 +70,8 @@ def lambda_handler(event, context):
         if record_id is not None and scene_id != None:
             scene = query_scenes(record_id, scene_id)
             try:
-                bucket = scene['bucket']
-                key = scene['key']
+                bucket = scene['bag_file_bucket']
+                key = scene['bag_file_prefix']
                 seek_to = scene['start_time']
             except KeyError as ke:
                 raise Exception(f"Could not find record field for {record_id}:{scene_id} in dynamo: {ke}")
