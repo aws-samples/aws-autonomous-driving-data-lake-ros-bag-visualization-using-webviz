@@ -11,6 +11,8 @@ a presigned url to your file and properly encode it and add it as query paramete
 ### Disclaimer
 This sample application deploys a [docker image](https://hub.docker.com/r/cruise/webviz) not maintained or hosted by AWS and as such no guarantees for its availability, security or correctness is given. 
 
+
+
 ### Architecture
 
 ![architecture](docs/architecture.jpg)
@@ -42,6 +44,7 @@ INFO:
 - If you have deployed the solution for [scene detection](https://github.com/aws-samples/aws-autonomous-driving-data-lake-ros-bag-scene-detection-pipeline) you can modify the values of `scenarioDB` in `cdk.json`, otherwise this can be deleted or ignored. 
 
 ### How to use
+- `sh build_dependencies.sh`: Clone webviz into webviz_source folder and build the static Docker image
 - `npm run cdk synth`: Synthesizes Cloudformation template
 - `npm run cdk deploy`: Deploys stack into your account and region
 - copy your rosbag files into the bucket and copy it's object key

@@ -27,6 +27,10 @@ import * as logs from '@aws-cdk/aws-logs';
 import * as cr from '@aws-cdk/custom-resources';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as iam from '@aws-cdk/aws-iam';
+import { DockerImageAsset } from '@aws-cdk/aws-ecr-assets';
+import * as fs from 'fs'
+import { exit } from 'process'
+
 const path = require('path')
 
 const app = new cdk.App()
@@ -37,9 +41,22 @@ export class WebvizStack extends cdk.Stack {
     constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
+        const webviz_folder = 'webviz_source'
+        const webviz_dockerfile = 'Dockerfile-static-webviz'
+
+        if (!fs.existsSync(path.join(__dirname, webviz_folder, webviz_dockerfile))) {
+            console.error('Dockerfile not found. Please run ./build_dependencies.sh to clone webviz locally first')
+            exit(1)
+        }
+
+        const webvizImageAsset = new DockerImageAsset(this, 'MyBuildImage', {
+            directory: path.join(__dirname, webviz_folder),
+            file: webviz_dockerfile
+          });
+
         const app = new ApplicationLoadBalancedFargateService(this, 'webviz_service', {
             taskImageOptions: {
-                image: ecs.ContainerImage.fromRegistry('cruise/webviz'),
+                image: ecs.EcrImage.fromDockerImageAsset(webvizImageAsset), // Or reference the public Docker image directly https://hub.docker.com/r/cruise/webviz
                 containerPort: 8080
             }
         })
