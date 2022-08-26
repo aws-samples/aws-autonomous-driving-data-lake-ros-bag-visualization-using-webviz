@@ -17,28 +17,22 @@
  */
 
 import 'source-map-support/register'
-import * as cdk from '@aws-cdk/core'
-import { ApplicationLoadBalancedFargateService } from '@aws-cdk/aws-ecs-patterns'
-import * as ecs from '@aws-cdk/aws-ecs'
-import * as s3 from '@aws-cdk/aws-s3'
-import * as lb from '@aws-cdk/aws-elasticloadbalancingv2'
-import { CustomResource } from '@aws-cdk/core';
-import * as logs from '@aws-cdk/aws-logs';
-import * as cr from '@aws-cdk/custom-resources';
-import * as lambda from '@aws-cdk/aws-lambda';
-import * as iam from '@aws-cdk/aws-iam';
-import { DockerImageAsset } from '@aws-cdk/aws-ecr-assets';
+import { Construct } from 'constructs';
+import { App, CustomResource, Stack, StackProps } from 'aws-cdk-lib'; 
+import { aws_s3, aws_ecs, aws_logs, aws_lambda, aws_iam, aws_ecr_assets, aws_ecs_patterns, custom_resources } from 'aws-cdk-lib';  
+import { aws_elasticloadbalancingv2 as lb } from 'aws-cdk-lib';  
+
 import * as fs from 'fs'
 import { exit } from 'process'
 
 const path = require('path')
 
-const app = new cdk.App()
+const app = new App()
 
-export class WebvizStack extends cdk.Stack {
-    targetBucket: s3.IBucket
+export class WebvizStack extends Stack {
+    targetBucket: aws_s3.IBucket
 
-    constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+    constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
 
         const webviz_folder = 'webviz_source'
@@ -49,14 +43,14 @@ export class WebvizStack extends cdk.Stack {
             exit(1)
         }
 
-        const webvizImageAsset = new DockerImageAsset(this, 'MyBuildImage', {
+        const webvizImageAsset = new aws_ecr_assets.DockerImageAsset(this, 'MyBuildImage', {
             directory: path.join(__dirname, webviz_folder),
             file: webviz_dockerfile
           });
 
-        const app = new ApplicationLoadBalancedFargateService(this, 'webviz_service', {
+        const app = new aws_ecs_patterns.ApplicationLoadBalancedFargateService(this, 'webviz_service', {
             taskImageOptions: {
-                image: ecs.EcrImage.fromDockerImageAsset(webvizImageAsset), // Or reference the public Docker image directly https://hub.docker.com/r/cruise/webviz
+                image: aws_ecs.EcrImage.fromDockerImageAsset(webvizImageAsset), // Or reference the public Docker image directly https://hub.docker.com/r/cruise/webviz
                 containerPort: 8080
             }
         })
@@ -72,30 +66,30 @@ export class WebvizStack extends cdk.Stack {
         const generateUrlFunctionName = app.node.tryGetContext('generateUrlFunctionName')
         
         if (bucketExists) {
-            this.targetBucket = s3.Bucket.fromBucketName(this, 'bucketRef', bucketName)
+            this.targetBucket = aws_s3.Bucket.fromBucketName(this, 'bucketRef', bucketName)
 
-            const onEvent = new lambda.Function(this, 'corsLambda', {
-                code: lambda.Code.fromAsset(path.join(__dirname, 'lambda', 'put_cors')),
+            const onEvent = new aws_lambda.Function(this, 'corsLambda', {
+                code: aws_lambda.Code.fromAsset(path.join(__dirname, 'lambda', 'put_cors')),
                 handler: 'main.lambda_handler',
-                runtime: lambda.Runtime.PYTHON_3_8,
-                role: new iam.Role(this, 'lambdaPutCorsRulesRole', {
-                    assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-                    managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')],
+                runtime: aws_lambda.Runtime.PYTHON_3_8,
+                role: new aws_iam.Role(this, 'lambdaPutCorsRulesRole', {
+                    assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
+                    managedPolicies: [aws_iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')],
                     inlinePolicies: {
-                        'allow-put-cors': new iam.PolicyDocument({
-                            statements: [new iam.PolicyStatement({
+                        'allow-put-cors': new aws_iam.PolicyDocument({
+                            statements: [new aws_iam.PolicyStatement({
                                 actions: ['s3:PutBucketCORS'],
                                 resources: [this.targetBucket.bucketArn],
-                                effect: iam.Effect.ALLOW
+                                effect: aws_iam.Effect.ALLOW
                             })]
                         })
                     }
                 })
             });
 
-            const corsCustomProvider = new cr.Provider(this, 'corsCustomProvider', {
+            const corsCustomProvider = new custom_resources.Provider(this, 'corsCustomProvider', {
                 onEventHandler: onEvent,
-                logRetention: logs.RetentionDays.ONE_MONTH
+                logRetention: aws_logs.RetentionDays.ONE_MONTH
             });
 
             new CustomResource(this, 'putCorsRulesCustomResource', {
@@ -105,26 +99,26 @@ export class WebvizStack extends cdk.Stack {
                 }
             });
         } else {
-            this.targetBucket = new s3.Bucket(this, 'webviz_bucket', {
+            this.targetBucket = new aws_s3.Bucket(this, 'webviz_bucket', {
                 bucketName,
                 cors: [{
                     allowedHeaders: ["*"],
-                    allowedMethods: [s3.HttpMethods.HEAD, s3.HttpMethods.GET],
+                    allowedMethods: [aws_s3.HttpMethods.HEAD, aws_s3.HttpMethods.GET],
                     allowedOrigins: [webviz_url],
                     exposedHeaders: ["ETag", "Content-Type", "Accept-Ranges", "Content-Length"]
                 }]
             })
         }
 
-        const generateUrlLambdaRole = new iam.Role(this, 'generateUrlLambdaRole', {
-            assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-            managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')],
+        const generateUrlLambdaRole = new aws_iam.Role(this, 'generateUrlLambdaRole', {
+            assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
+            managedPolicies: [aws_iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')],
             inlinePolicies: {
-                'dynamo-get-item': new iam.PolicyDocument({
-                    statements: [new iam.PolicyStatement({
+                'dynamo-get-item': new aws_iam.PolicyDocument({
+                    statements: [new aws_iam.PolicyStatement({
                         actions: ['dynamodb:GetItem'],
                         resources: ['*'],
-                        effect: iam.Effect.ALLOW
+                        effect: aws_iam.Effect.ALLOW
                     })]
                 })
             }
@@ -140,11 +134,11 @@ export class WebvizStack extends cdk.Stack {
             lambdaEnvs['SCENE_DB_TABLE'] = dbConfig.tableName
         }
 
-        const generateUrlLambda = new lambda.Function(this, 'generateUrlLambda', {
-            code: lambda.Code.fromAsset(path.join(__dirname, 'lambda', 'generate_url')),
+        const generateUrlLambda = new aws_lambda.Function(this, 'generateUrlLambda', {
+            code: aws_lambda.Code.fromAsset(path.join(__dirname, 'lambda', 'generate_url')),
             handler: 'main.lambda_handler',
             functionName: generateUrlFunctionName,
-            runtime: lambda.Runtime.PYTHON_3_8,
+            runtime: aws_lambda.Runtime.PYTHON_3_8,
             environment: {
                 'WEBVIZ_ELB_URL': webviz_url,
                 ...lambdaEnvs
